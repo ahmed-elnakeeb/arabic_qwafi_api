@@ -18,10 +18,10 @@ with open('finale.json',encoding="utf_8",mode="r") as json_file:
 dbm.start_connection()
 
 
-for key, value in json_.items():
-    for i in value:
-        query=f"""insert into words(word) values('{str(i)}')"""
-        dbm.qurey(query)
+# for key, value in json_.items():
+#     for i in value:
+#         query=f"""insert into words(word) values('{str(i)}')"""
+#         dbm.qurey(query)
 
 
 query="""select * from words"""
