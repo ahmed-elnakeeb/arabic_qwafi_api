@@ -1,0 +1,1 @@
+{"id":"2fdbb528-076f-492d-950d-4fa6edcab6e0","space":23753,"runtime":"python3.9","name":"plz2","path":"8qnpet","project":"a0i0ugoq","account":"144798365827","region":"eu-central-1","deps":["fastapi"],"envs":null,"public":true,"log_level":"debug","cron":""}

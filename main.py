@@ -1,70 +1,258 @@
-from fastapi import FastAPI , Path
+from fastapi import FastAPI, Path
 from typing import Optional
 from fastapi.responses import HTMLResponse
 from db import db
+from fastapi.middleware.cors import CORSMiddleware
+import csv
+import json
 
 
-app=FastAPI()
-db=db("q2.db")
+app = FastAPI()
+origins = [
+    # "http://localhost.tiangolo.com",
+    # "https://localhost.tiangolo.com",
+    # "http://localhost",
+    # "http://localhost:8080",
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+db = db("el-qafia.db")
 db.start_connection2()
 
-@app.get("/",response_class=HTMLResponse)
+
+@app.get("/", response_class=HTMLResponse)
 def home():
     return("<p>use <a href='/docs'>docs<a> for help")
 
+
 @app.get("/data")
 def data():
-    return {"results":db.rows("select * from words")}
+    return {"results": db.rows("select * from words")}
+
 
 @app.get("/letter/{letter}")
-def ltr(letter:str=Path(None,description="arabic letter")):
+def ltr(letter: str = Path(None, description="arabic letter")):
     try:
-        return {"results":db.rows(f"select * from words where last='{str(letter)}'")}
+        return {"results": db.rows(f"select word,id from words where last='{str(letter)}' order by count desc")}
     except:
-        return {"results":"something went wrong"}
+        return {"results": "something went wrong"}
+
+@app.get("/search_word")
+def search_word(word: Optional[str] = None, isfirst: Optional[bool] = None,islast: Optional[bool] = None, isb_last: Optional[bool] = None, issize: Optional[bool] = None,isvowel :Optional[bool] = None):
+    isfirst=True
+    isb_last=True
+    islast=True
+    isvowel=True
+    vowels=["ما"[1],"ي","و"]
+    try:
+        # check if word or exit
+        if  not word :
+            raise Exception()
+        elif (len(word)<3):
+            raise Exception()
+        # start logic for the word 
+        _template=""
+        
+        if issize:
+            print("issize: true")
+
+            _template="_" * len(word)
+            _template=list(_template)
+            if isfirst:
+                _template[0]=word[0]
+            if islast:
+                _template[-1]=word[-1]
+            if isb_last:
+                _template[-2]=word[-2]
+            if isvowel:
+                for i in range( len(word)):
+                    if word[i] in vowels:
+                        _template[i]=word[i]
+            _template="".join(_template)
+
+        else:
+            print("issize: false")
+
+            #just the outs 
+            outs=[]
+            if isfirst:
+                outs.append(0)
+            if islast:
+                outs.append(len(word)-1)
+            if isb_last:
+                outs.append(len(word)-2)
+                
+            _template="%"
+            if isfirst:
+                _template=word[0]
+                _template+="%"
+            if isvowel:
+                for i in range( len(word)):
+                    if word[i] in vowels:
+                        if i not in outs:
+                            _template+=word[i]
+                            _template+="%"
+            if isb_last:
+                _template+=word[-2]
+            if islast:
+                _template+=word[-1]
+        print("template",_template)
+        query=f"select word,id from words where word like '{_template}'  order by count desc limit 100"
+        res=db.rows(query)
+        return {"results": res}
+
+        
+    except:
+        return {"results": "something went wrong"}
 
 @app.get("/search")
-def search(last:Optional[str]=None,b_last:Optional[str]=None,count:Optional[int]=None):
+def search(first: Optional[str] = None, last: Optional[str] = None, b_last: Optional[str] = None, size: Optional[int] = None,min:Optional[int]=0,max:Optional[int]=100):
     try:
-
         if last:
-            if (count and b_last):
-                res=db.rows(
-                    f"select * from words where last ='{last}' and b_last='{b_last}' and count ={count}")
-            elif count:
-                res=db.rows(
-                    f"select * from words where last ='{last}' and count ={count}")
+            if (size and b_last):
+                res = db.rows(
+                    f"select word,id from words where last ='{last}' and b_last='{b_last}'  and size ={size} order by count desc ")
+            elif size:
+                res = db.rows(
+                    f"select word,id from words where last ='{last}' and size ={size} order by count desc")
             elif b_last:
-                res=db.rows(
-                    f"select * from words where last ='{last}' and b_last='{b_last}'")
+                res = db.rows(
+                    f"select word,id from words where last ='{last}' and b_last='{b_last}' and size  BETWEEN {min} and {max} order by count desc")
             else:
-                res=db.rows(f"select * from words where last='{str(last)}'")
-            return {"results":res}
+                res = db.rows(
+                    f"select word,id from words where last='{str(last)}' and size  BETWEEN {min} and {max} order by count desc")
+            return {"results": res}
 
         else:
-            return {"results":"plz add a last letter"}
+            return {"results": "plz add a last letter"}
     except:
-        return {"results":"something went wrong"}
+        return {"results": "something went wrong"}
 
-@app.get("/meaning/{word}")
-def meaning(word:str=Path(None,description="arabic word")):
+
+@app.get("/mostliked")
+def mostliked():
+    query = "select word,id from words order by count desc limit 1000"
+    rows = db.rows(query)
+    return {"results": rows}
+
+
+@app.get("/meaning")
+def meaning(word: Optional[str] = None, words: Optional[str] = None, id: int = None, ids: str = None):
+    # try:
+    res = []
+
+    if id:
+        res = [db.rows(f"select meanings from words where id={id}")]
+
+    elif word:
+        res = [
+            db.rows(f"select meanings from words where word='{word}'")[0][0]]
+    elif words:
+        words = [str(w) for w in words.split()]
+        print(words)
+        for word in words:
+            res.append(
+                db.rows(f"select meanings from words where word='{word}'")[0][0])
+    elif ids:
+        ids = [int(i) for i in ids.split()]
+        for id in ids:
+            res.append(
+                db.rows(f"select meanings from words where id='{id}'")[0][0])
+    if len(res) >= 1:
+        return {"results": res}
+    else:
+        return {"results": "no such word"}
+    # except:
+    #     return {"results": "something went wrong"}
+
+
+@app.get("/quote")
+def quote():
+    from day_of_year import dayOfYear
+
+    day = dayOfYear()
+    with open('quotes.csv', newline='', encoding="utf-8-sig") as f:
+        data = list(csv.reader(f))
+        return(data[day])
+
+
+
+@app.get("/info")
+def info(id: int = None, word: str = None):
+    if id:
+        return(
+            db.rows(f"select * from words where id='{id}'"))
+
+    elif word:
+        return(
+            db.rows(f"select * from words where word='{word}'"))
+  
+@app.post("/comment")
+def comment(comment: str, user: Optional[str] = None, section: Optional[str] = None):
     try:
-        res=db.rows(f"select meaning from words where word='{word}'")[0]
-        if len(res)==1:
-            return {"results":res}
+        if user and section:
+            query = f"insert into comments (user,comment,section) values('{user}','{comment}','{section}') "
+            db.qurey(query)
+
+        elif section:
+            query = f"insert into comments (comment,section) values('{comment}','{section}') "
+            db.qurey(query)
+        elif user:
+            query = f"insert into comments (user,comment) values('{user}','{comment}') "
+            db.qurey(query)
         else:
-            return {"results":"no such word"}
+            query = f"insert into comments (comment) values('{comment}') "
+            db.qurey(query)
+        return {"results": "accepted"}
     except:
-        return {"results":"something went wrong"}
+        return {"results": "something went wrong"}
+
+@app.get("/comments")
+def comments(section: Optional[str] = "global"):
+    query = f"select * from comments where section='{section}'"
+    return {"results":db.rows(query)}
+
+@app.post("/add_qafia")
+def add_qafia(qafia:str , meaning:str=None):
+    with open("temp.txt", encoding="utf-8",mode="a") as file:
+        file.write(f"{qafia},{meaning}\n")
 
 
-@app.get("/copy/{word}")
-def copy(word:str=Path(None,description="arabic word")):
-    try:
-        query=f"""UPDATE words
-            SET likes = likes+1
-            WHERE word = '{word}';"""
-        db.qurey(query)
-        return {"resuslts":db.rows(f"select likes from words where word='{word}'")[0]}
-    except:
-        return {"results":"something went wrong"}
+# @app.get("/copy")
+# def copy(word: Optional[str] = None, id: Optional[int] = None, ids: Optional[str] = None):
+#     try:
+#         if id:
+#             query = f"""UPDATE words
+#                 SET likes = likes+1
+#                 WHERE id = {id};"""
+#             db.qurey(query)
+
+#             return {"results": [db.rows(f"select likes from words where id='{id}'")[0]]}
+
+#         elif word:
+#             query = f"""UPDATE words
+#                 SET likes = likes+1
+#                 WHERE word = '{word}'"""
+#             db.qurey(query)
+#             return {"resuslts": [db.rows(f"select likes from words where word='{word}'")[0]]}
+#         elif ids:
+#             ids = [int(id) for id in ids.split()]
+#             res = []
+#             for i in ids:
+#                 query = f"""UPDATE words
+#                 SET likes = likes+1
+#                 WHERE id = '{i}';"""
+#                 db.qurey(query)
+#                 res.append(db.rows(f"select likes from words where id={i}")[0])
+#             return {"resuslts": res}
+
+#     except:
+#         return {"results": "something went wrong"}
