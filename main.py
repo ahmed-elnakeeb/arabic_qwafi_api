@@ -5,6 +5,7 @@ from db import db
 from fastapi.middleware.cors import CORSMiddleware
 import csv
 import json
+from tools import get_templates
 
 
 app = FastAPI()
@@ -45,76 +46,27 @@ def ltr(letter: str = Path(None, description="arabic letter")):
     except:
         return {"results": "something went wrong"}
 
+
 @app.get("/search_word")
-def search_word(word: Optional[str] = None, isfirst: Optional[bool] = None,islast: Optional[bool] = None, isb_last: Optional[bool] = None, issize: Optional[bool] = None,isvowel :Optional[bool] = None):
-    isfirst=True
-    isb_last=True
-    islast=True
-    isvowel=True
-    vowels=["ما"[1],"ي","و"]
-    try:
-        # check if word or exit
-        if  not word :
-            raise Exception()
-        elif (len(word)<3):
-            raise Exception()
-        # start logic for the word 
-        _template=""
-        
-        if issize:
-            print("issize: true")
+def search_word(word: Optional[str] = None):
 
-            _template="_" * len(word)
-            _template=list(_template)
-            if isfirst:
-                _template[0]=word[0]
-            if islast:
-                _template[-1]=word[-1]
-            if isb_last:
-                _template[-2]=word[-2]
-            if isvowel:
-                for i in range( len(word)):
-                    if word[i] in vowels:
-                        _template[i]=word[i]
-            _template="".join(_template)
+    templates=get_templates(word)
+    results=[]
+    try:    
+        for _template in templates:
+            print("template", _template)
+            query = f"select word,id from words where word like '{_template}'  order by count desc limit 100"
+            res = db.rows(query)
+            results+= res
+        results=list(dict.fromkeys(results))
+        return {"results": results}
 
-        else:
-            print("issize: false")
-
-            #just the outs 
-            outs=[]
-            if isfirst:
-                outs.append(0)
-            if islast:
-                outs.append(len(word)-1)
-            if isb_last:
-                outs.append(len(word)-2)
-                
-            _template="%"
-            if isfirst:
-                _template=word[0]
-                _template+="%"
-            if isvowel:
-                for i in range( len(word)):
-                    if word[i] in vowels:
-                        if i not in outs:
-                            _template+=word[i]
-                            _template+="%"
-            if isb_last:
-                _template+=word[-2]
-            if islast:
-                _template+=word[-1]
-        print("template",_template)
-        query=f"select word,id from words where word like '{_template}'  order by count desc limit 100"
-        res=db.rows(query)
-        return {"results": res}
-
-        
     except:
         return {"results": "something went wrong"}
 
+
 @app.get("/search")
-def search(first: Optional[str] = None, last: Optional[str] = None, b_last: Optional[str] = None, size: Optional[int] = None,min:Optional[int]=0,max:Optional[int]=100):
+def search(first: Optional[str] = None, last: Optional[str] = None, b_last: Optional[str] = None, size: Optional[int] = None, min: Optional[int] = 0, max: Optional[int] = 100):
     try:
         if last:
             if (size and b_last):
@@ -176,13 +128,12 @@ def meaning(word: Optional[str] = None, words: Optional[str] = None, id: int = N
 
 @app.get("/quote")
 def quote():
-    from day_of_year import dayOfYear
+    from tools import dayOfYear
 
     day = dayOfYear()
     with open('quotes.csv', newline='', encoding="utf-8-sig") as f:
         data = list(csv.reader(f))
         return(data[day])
-
 
 
 @app.get("/info")
@@ -194,7 +145,8 @@ def info(id: int = None, word: str = None):
     elif word:
         return(
             db.rows(f"select * from words where word='{word}'"))
-  
+
+
 @app.post("/comment")
 def comment(comment: str, user: Optional[str] = None, section: Optional[str] = None):
     try:
@@ -215,14 +167,16 @@ def comment(comment: str, user: Optional[str] = None, section: Optional[str] = N
     except:
         return {"results": "something went wrong"}
 
+
 @app.get("/comments")
 def comments(section: Optional[str] = "global"):
     query = f"select * from comments where section='{section}'"
-    return {"results":db.rows(query)}
+    return {"results": db.rows(query)}
+
 
 @app.post("/add_qafia")
-def add_qafia(qafia:str , meaning:str=None):
-    with open("temp.txt", encoding="utf-8",mode="a") as file:
+def add_qafia(qafia: str, meaning: str = None):
+    with open("temp.txt", encoding="utf-8", mode="a") as file:
         file.write(f"{qafia},{meaning}\n")
 
 

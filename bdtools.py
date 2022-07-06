@@ -27,3 +27,4 @@ dbm.start_connection()
 query="""select * from words"""
 print(len(dbm.rows(query)))
 dbm.stop_connection()
+
