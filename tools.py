@@ -19,29 +19,37 @@ def get_templates(word):
     VOWLS = ["ما"[1], "ي", "و"]
     #    # first , size , vowls, bl, last
     opts = [
-        [True, True, True, True, True],  # exact
-        [True, False, True, True, True],  # exact no sise
-        [True, False, False, True, True],  # exact no size no vowls
-        [True, True, False, True, True],  # exact no vowls
+        # [True, True, True, True, True],  #im exact
+        [True, False, True, True, True],  # exact no size
+        # [True, False, False, True, True],  # exact no size no vowls
+        # [True, True, False, True, True],  # exact no vowls
 
-        [True, True, True, False, True],  # no bl
-        [True, False, True, False, True],  # no bl no sise
-        [True, False, False, False, True],  # no bl no size no vowls
-        [True, True, False, False, True],  # no bl no vowls
+        # [False, True, True, True, True],  #im no f
+        [False, False, True, True, True],  # no f  no size
+        # [False, False, False, True, True],  # no f no size no vowls
+        # [False, True, False, True, True],  # no f no vowls
 
-        [False, True, True, True, True],  # no f
-        [False, False, True, True, True],  # no f  no sise
-        [False, False, False, True, True],  # no f no size no vowls
-        [False, True, False, True, True],  # no f no vowls
+        # [True, True, True, False, True],  #im no bl
+        [True, False, True, False, True],  # no bl no size
+        # [True, False, False, False, True],  #im no bl no size no vowls
+        # [True, True, False, False, True],  # no bl no vowls
+
+        [True, True, False, True, False],  #im no last
+
+        [False, False, False, True, True], #r no f no size no vowls
+        [False, False, True, False, True],  # r
+
+        [False, False, False, False, True]
+
     ]
-    templates=[]
+    templates = []
 
     for o in opts:
-        isfirst=o[0]
-        issize=o[1]
-        isvowel=o[2]
-        isb_last=o[3]
-        islast=o[4]
+        isfirst = o[0]
+        issize = o[1]
+        isvowel = o[2]
+        isb_last = o[3]
+        islast = o[4]
 
         _template = ""
 
@@ -88,5 +96,6 @@ def get_templates(word):
                 _template += word[-2]
             if islast:
                 _template += word[-1]
-        templates.append(_template)
+        if _template not in templates:
+            templates.append(_template)
     return templates

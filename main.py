@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import csv
 import json
 from tools import get_templates
+from functools import cache
 
 
 app = FastAPI()
@@ -33,12 +34,11 @@ db.start_connection2()
 def home():
     return("<p>use <a href='/docs'>docs<a> for help")
 
-
 @app.get("/data")
 def data():
     return {"results": db.rows("select * from words")}
 
-
+@cache
 @app.get("/letter/{letter}")
 def ltr(letter: str = Path(None, description="arabic letter")):
     try:
@@ -46,7 +46,7 @@ def ltr(letter: str = Path(None, description="arabic letter")):
     except:
         return {"results": "something went wrong"}
 
-
+@cache
 @app.get("/search_word")
 def search_word(word: Optional[str] = None):
 
@@ -55,7 +55,7 @@ def search_word(word: Optional[str] = None):
     try:    
         for _template in templates:
             print("template", _template)
-            query = f"select word,id from words where word like '{_template}'  order by count desc limit 100"
+            query = f"select word,id from words where word like '{_template}'  order by count desc "
             res = db.rows(query)
             results+= res
         results=list(dict.fromkeys(results))
@@ -88,7 +88,7 @@ def search(first: Optional[str] = None, last: Optional[str] = None, b_last: Opti
     except:
         return {"results": "something went wrong"}
 
-
+@cache
 @app.get("/mostliked")
 def mostliked():
     query = "select word,id from words order by count desc limit 1000"
