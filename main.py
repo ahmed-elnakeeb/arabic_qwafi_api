@@ -10,10 +10,9 @@ from functools import cache
 from fastapi.staticfiles import StaticFiles
 
 
-app = FastAPI()
-app.mount("/", StaticFiles(directory="static",html = True), name="static")
-
-
+# Your main app must be first!
+app=FastAPI()
+api_app=FastAPI()
 
 origins = [
     # "http://localhost.tiangolo.com",
@@ -35,16 +34,16 @@ db = db("el-qafia.db")
 db.start_connection2()
 
 
-@app.get("/", response_class=HTMLResponse)
+@api_app.get("/", response_class=HTMLResponse)
 def home():
     return("<p>use <a href='/docs'>docs<a> for help")
 
-@app.get("/data")
+@api_app.get("/data")
 def data():
     return {"results": db.rows("select * from words")}
 
 @cache
-@app.get("/letter/{letter}")
+@api_app.get("/letter/{letter}")
 def ltr(letter: str = Path(None, description="arabic letter")):
     try:
         return {"results": db.rows(f"select word,id from words where last='{str(letter)}' order by count desc")}
@@ -52,7 +51,7 @@ def ltr(letter: str = Path(None, description="arabic letter")):
         return {"results": "something went wrong"}
 
 @cache
-@app.get("/search_word")
+@api_app.get("/search_word")
 def search_word(word: Optional[str] = None):
 
     templates=get_templates(word)
@@ -70,7 +69,7 @@ def search_word(word: Optional[str] = None):
         return {"results": "something went wrong"}
 
 
-@app.get("/search")
+@api_app.get("/search")
 def search(first: Optional[str] = None, last: Optional[str] = None, b_last: Optional[str] = None, size: Optional[int] = None, min: Optional[int] = 0, max: Optional[int] = 100):
     try:
         if last:
@@ -94,14 +93,14 @@ def search(first: Optional[str] = None, last: Optional[str] = None, b_last: Opti
         return {"results": "something went wrong"}
 
 @cache
-@app.get("/mostliked")
+@api_app.get("/mostliked")
 def mostliked():
     query = "select word,id from words order by count desc limit 1000"
     rows = db.rows(query)
     return {"results": rows}
 
 
-@app.get("/meaning")
+@api_app.get("/meaning")
 def meaning(word: Optional[str] = None, words: Optional[str] = None, id: int = None, ids: str = None):
     # try:
     res = []
@@ -131,7 +130,7 @@ def meaning(word: Optional[str] = None, words: Optional[str] = None, id: int = N
     #     return {"results": "something went wrong"}
 
 
-@app.get("/quote")
+@api_app.get("/quote")
 def quote():
     from tools import dayOfYear
 
@@ -141,7 +140,7 @@ def quote():
         return(data[day])
 
 
-@app.get("/info")
+@api_app.get("/info")
 def info(id: int = None, word: str = None):
     if id:
         return(
@@ -152,7 +151,7 @@ def info(id: int = None, word: str = None):
             db.rows(f"select * from words where word='{word}'"))
 
 
-@app.post("/comment")
+@api_app.post("/comment")
 def comment(comment: str, user: Optional[str] = None, section: Optional[str] = None):
     try:
         if user and section:
@@ -173,16 +172,20 @@ def comment(comment: str, user: Optional[str] = None, section: Optional[str] = N
         return {"results": "something went wrong"}
 
 
-@app.get("/comments")
+@api_app.get("/comments")
 def comments(section: Optional[str] = "global"):
     query = f"select * from comments where section='{section}'"
     return {"results": db.rows(query)}
 
 
-@app.post("/add_qafia")
+@api_app.post("/add_qafia")
 def add_qafia(qafia: str, meaning: str = None):
     with open("temp.txt", encoding="utf-8", mode="a") as file:
         file.write(f"{qafia},{meaning}\n")
+
+app.mount("/api",api_app)
+app.mount("/", StaticFiles(directory="static",html = True), name="static")
+
 
 def main():
     import uvicorn
