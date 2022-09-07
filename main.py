@@ -7,9 +7,14 @@ import csv
 import json
 from tools import get_templates
 from functools import cache
+from fastapi.staticfiles import StaticFiles
 
 
 app = FastAPI()
+app.mount("/", StaticFiles(directory="static",html = True), name="static")
+
+
+
 origins = [
     # "http://localhost.tiangolo.com",
     # "https://localhost.tiangolo.com",
@@ -179,34 +184,9 @@ def add_qafia(qafia: str, meaning: str = None):
     with open("temp.txt", encoding="utf-8", mode="a") as file:
         file.write(f"{qafia},{meaning}\n")
 
+def main():
+    import uvicorn
+    uvicorn.run(app, host="192.168.1.100", port=8000)
 
-# @app.get("/copy")
-# def copy(word: Optional[str] = None, id: Optional[int] = None, ids: Optional[str] = None):
-#     try:
-#         if id:
-#             query = f"""UPDATE words
-#                 SET likes = likes+1
-#                 WHERE id = {id};"""
-#             db.qurey(query)
-
-#             return {"results": [db.rows(f"select likes from words where id='{id}'")[0]]}
-
-#         elif word:
-#             query = f"""UPDATE words
-#                 SET likes = likes+1
-#                 WHERE word = '{word}'"""
-#             db.qurey(query)
-#             return {"resuslts": [db.rows(f"select likes from words where word='{word}'")[0]]}
-#         elif ids:
-#             ids = [int(id) for id in ids.split()]
-#             res = []
-#             for i in ids:
-#                 query = f"""UPDATE words
-#                 SET likes = likes+1
-#                 WHERE id = '{i}';"""
-#                 db.qurey(query)
-#                 res.append(db.rows(f"select likes from words where id={i}")[0])
-#             return {"resuslts": res}
-
-#     except:
-#         return {"results": "something went wrong"}
+if __name__ == "__main__":
+    main()
