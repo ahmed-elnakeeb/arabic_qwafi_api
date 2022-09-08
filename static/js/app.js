@@ -96,8 +96,8 @@ $(function () {
 
   // Database Ajax variables
   const ARTICLES_URL = "/js/libs/articles.json"; // on Github : /qafia/js/libs/articles.json
-  const BackEndURL = "https://8qnpet.deta.dev/";
-  // old: https://fd7f-41-236-199-49.eu.ngrok.io/
+  const BackEndURL = "http://192.168.1.100:8000/api/";
+  // old: https://fd7f-41-236-199-49.eu.ngrok.io/ 
   // OLD : https://8qnpet.deta.dev/
   // old: https://qafia.deta.dev/   https://jkt3ay.deta.dev/
 
@@ -803,8 +803,8 @@ $(function () {
         handleMessage("لايجب ان يكون التعليق ارقام فقط");
         return;
       }
-      if (data.comment.length < 6) {
-        handleMessage("يجب ان يكون التعليق اكثر من 6 احرف");
+      if (data.comment.length < 1) {
+        handleMessage("يجب ان يكون التعليق اكثر من 1 احرف");
         return;
       }
 

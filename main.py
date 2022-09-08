@@ -183,6 +183,13 @@ def add_qafia(qafia: str, meaning: str = None):
     with open("temp.txt", encoding="utf-8", mode="a") as file:
         file.write(f"{qafia},{meaning}\n")
 
+
+@api_app.get("/qafias")
+def qafias():
+    with open("temp.txt", encoding="utf-8", mode="r") as file:
+        return {"results": file.readlines()}
+
+
 app.mount("/api",api_app)
 app.mount("/", StaticFiles(directory="static",html = True), name="static")
 
